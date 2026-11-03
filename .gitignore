@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+_scratch/
+.venv/
+output/verify/**/render.pdf

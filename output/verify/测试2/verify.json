@@ -1,0 +1,139 @@
+{
+  "source": "测试2.pdf",
+  "pptx": "测试2.pptx",
+  "mean_ssim": 0.9341,
+  "pages": [
+    {
+      "slide": 1,
+      "source_page": 1,
+      "ssim": 0.9659
+    },
+    {
+      "slide": 2,
+      "source_page": 2,
+      "ssim": 0.9472
+    },
+    {
+      "slide": 3,
+      "source_page": 3,
+      "ssim": 0.9471
+    },
+    {
+      "slide": 4,
+      "source_page": 4,
+      "ssim": 0.9185
+    },
+    {
+      "slide": 5,
+      "source_page": 5,
+      "ssim": 0.936
+    },
+    {
+      "slide": 6,
+      "source_page": 6,
+      "ssim": 0.9096
+    },
+    {
+      "slide": 7,
+      "source_page": 7,
+      "ssim": 0.9152
+    },
+    {
+      "slide": 8,
+      "source_page": 8,
+      "ssim": 0.9081
+    },
+    {
+      "slide": 9,
+      "source_page": 9,
+      "ssim": 0.9021
+    },
+    {
+      "slide": 10,
+      "source_page": 10,
+      "ssim": 0.9917
+    }
+  ],
+  "inventory": [
+    {
+      "page": 1,
+      "textbox": 5,
+      "picture": 3,
+      "table": 0,
+      "shape": 0,
+      "chars": 61
+    },
+    {
+      "page": 2,
+      "textbox": 10,
+      "picture": 1,
+      "table": 0,
+      "shape": 0,
+      "chars": 139
+    },
+    {
+      "page": 3,
+      "textbox": 30,
+      "picture": 7,
+      "table": 0,
+      "shape": 0,
+      "chars": 200
+    },
+    {
+      "page": 4,
+      "textbox": 18,
+      "picture": 12,
+      "table": 0,
+      "shape": 0,
+      "chars": 326
+    },
+    {
+      "page": 5,
+      "textbox": 16,
+      "picture": 11,
+      "table": 0,
+      "shape": 0,
+      "chars": 225
+    },
+    {
+      "page": 6,
+      "textbox": 18,
+      "picture": 7,
+      "table": 0,
+      "shape": 0,
+      "chars": 393
+    },
+    {
+      "page": 7,
+      "textbox": 16,
+      "picture": 8,
+      "table": 0,
+      "shape": 0,
+      "chars": 376
+    },
+    {
+      "page": 8,
+      "textbox": 27,
+      "picture": 4,
+      "table": 0,
+      "shape": 0,
+      "chars": 346
+    },
+    {
+      "page": 9,
+      "textbox": 20,
+      "picture": 13,
+      "table": 0,
+      "shape": 0,
+      "chars": 418
+    },
+    {
+      "page": 10,
+      "textbox": 2,
+      "picture": 5,
+      "table": 0,
+      "shape": 0,
+      "chars": 19
+    }
+  ]
+}

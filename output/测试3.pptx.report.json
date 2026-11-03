@@ -1,0 +1,96 @@
+{
+  "pages": [
+    {
+      "page": 1,
+      "background": "solid",
+      "figures": 1,
+      "text_boxes": 1,
+      "tables": 0,
+      "editable_text_chars": 19
+    },
+    {
+      "page": 2,
+      "background": "image",
+      "figures": 0,
+      "text_boxes": 7,
+      "tables": 0,
+      "editable_text_chars": 129
+    },
+    {
+      "page": 3,
+      "background": "solid",
+      "figures": 2,
+      "text_boxes": 14,
+      "tables": 0,
+      "editable_text_chars": 83
+    },
+    {
+      "page": 4,
+      "background": "solid",
+      "figures": 1,
+      "text_boxes": 13,
+      "tables": 0,
+      "editable_text_chars": 147
+    },
+    {
+      "page": 5,
+      "background": "solid",
+      "figures": 6,
+      "text_boxes": 11,
+      "tables": 0,
+      "editable_text_chars": 241
+    },
+    {
+      "page": 6,
+      "background": "solid",
+      "figures": 6,
+      "text_boxes": 13,
+      "tables": 0,
+      "editable_text_chars": 181
+    },
+    {
+      "page": 7,
+      "background": "solid",
+      "figures": 6,
+      "text_boxes": 11,
+      "tables": 0,
+      "editable_text_chars": 186
+    },
+    {
+      "page": 8,
+      "background": "solid",
+      "figures": 7,
+      "text_boxes": 31,
+      "tables": 0,
+      "editable_text_chars": 303
+    },
+    {
+      "page": 9,
+      "background": "solid",
+      "figures": 4,
+      "text_boxes": 11,
+      "tables": 0,
+      "editable_text_chars": 243
+    },
+    {
+      "page": 10,
+      "background": "solid",
+      "figures": 0,
+      "text_boxes": 5,
+      "tables": 0,
+      "editable_text_chars": 59
+    }
+  ],
+  "slide_width_pt": 852.0,
+  "slide_height_pt": 1212.0,
+  "source": "测试3.pdf",
+  "output": "测试3.pptx",
+  "elapsed_sec": 43.7,
+  "stats": {
+    "text_boxes": 117,
+    "figures": 33,
+    "tables": 0,
+    "editable_text_chars": 1591
+  },
+  "report_file": "output\\测试3.pptx.report.json"
+}
