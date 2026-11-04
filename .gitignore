@@ -3,3 +3,5 @@ __pycache__/
 _scratch/
 .venv/
 output/verify/**/render.pdf
+.idea/
+output/冒烟*
