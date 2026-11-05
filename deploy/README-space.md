@@ -15,9 +15,11 @@ pinned: false
 ## 架构
 
 - SDK：Docker，端口 7860（与 `Dockerfile` / `app.py` 一致）
-- 镜像内**自带 OCR 侧车**：`start.sh` 先启动 `ocr_server.py`（RapidOCR，监听 `127.0.0.1:8866`），就绪后再启动 `uvicorn app:app`，因此 Space 不依赖任何外部 OCR 服务
-- 首次构建会下载 opencv / pymupdf / httpx / rapidocr-onnxruntime 等依赖（约几分钟）
+- OCR 在进程内运行（RapidOCR + onnxruntime），镜像自带模型，单进程即可，不依赖任何外部服务
+- 首次构建会下载 opencv / pymupdf / rapidocr-onnxruntime 等依赖（约几分钟）
 - 免费 CPU 实例可正常转换（约 5~10 秒/页）
+
+> 注意：Hugging Face 目前对 Docker / Gradio Space 收取计算资源费用，免费账号的配额为 0（Build 后会直接 PAUSED 并提示 `Quota exceeded`），部署前需确认账号已升级 PRO。
 
 ## 步骤
 
@@ -35,11 +37,11 @@ pinned: false
 
 ## 可选：改用外部 OCR 服务
 
-在 `Settings → Variables and secrets` 里加：
+当前是本地 OCR。若改为外部服务，需要先在 `converter/ocr.py` 里恢复 HTTP 调用分支，再在 `Settings → Variables and secrets` 里配置：
 
 | 变量 | 说明 |
 |---|---|
-| `OCR_API_URL` | 外部 OCR 接口地址（覆盖默认的本地侧车） |
+| `OCR_API_URL` | 外部 OCR 接口地址 |
 | `OCR_API_KEY` | 需要鉴权时填 |
 | `OCR_API_TIMEOUT` | 单页超时秒数，默认 30 |
 

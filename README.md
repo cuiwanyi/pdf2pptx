@@ -30,7 +30,7 @@ pdf2pptx/
 ├── Dockerfile
 ├── converter/
 │   ├── pdf_doc.py         # PDF 读取与栅格化（坐标统一用 pt）
-│   ├── ocr.py             # 文本行检测+识别（调用外部 OCR HTTP API）
+│   ├── ocr.py             # 文本行检测+识别（本地 RapidOCR / onnxruntime）
 │   ├── analyze.py         # 版面分析：段落、字号、颜色、表格、图形区域、背景层
 │   ├── build.py           # 组装 PPTX（文本框/图片/表格/背景，z 序、EMU 换算）
 │   └── pipeline.py        # 串起流水线并产出报告
@@ -50,46 +50,21 @@ pdf2pptx/
 pip install -r requirements.txt
 ```
 
-OCR 有两种后端，由 `OCR_API_URL` 自动切换：
+### 3.1 OCR 模型
 
-- **不设置**（默认）→ 进程内 RapidOCR（onnxruntime，纯 CPU），`pip install -r requirements-demo.txt` 即可离线跑
-- **设置了** → 调用外部 OCR HTTP 服务，本地不加载模型
+OCR 完全在本地运行，模型随 `rapidocr-onnxruntime` 一起安装，**无需联网、无需 GPU、无需任何外部服务**：
 
-### 3.1 OCR 后端配置
+| 模型 | 作用 |
+|---|---|
+| `ch_PP-OCRv4_det_infer.onnx` | 文本行检测 |
+| `ch_PP-OCRv4_rec_infer.onnx` | 文本识别 |
+| `ch_ppocr_mobile_v2.0_cls_infer.onnx` | 文字方向分类 |
 
-全部通过环境变量配置（见 `converter/ocr.py`）：
+三个模型位于 `site-packages/rapidocr_onnxruntime/models/`，总大小约 16 MB，首次调用时初始化约 1~2 秒，之后常驻内存复用（`converter/ocr.py` 里的单例 + 锁）。
 
-| 变量 | 默认值 | 说明 |
-|---|---|---|
-| `OCR_API_URL` | 空（走内置 RapidOCR） | 填地址则改用外部 OCR 服务，如 `http://127.0.0.1:8866/ocr` |
-| `OCR_API_TIMEOUT` | `30` | 单页请求超时（秒），只能填数字 |
-| `OCR_API_KEY` | 空 | 可选；非空时加 `Authorization: Bearer <key>` |
-
-```bash
-# Linux / macOS
-export OCR_API_URL=http://127.0.0.1:8866/ocr
-export OCR_API_TIMEOUT=60
-```
-
-```powershell
-# Windows PowerShell
-$env:OCR_API_URL = "http://127.0.0.1:8866/ocr"
-$env:OCR_API_TIMEOUT = "60"
-```
-
-接口契约：`POST` + `multipart/form-data`，字段名 `image`，值为 PNG 二进制。
-
-```json
-{"details": [{"box": [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], "text": "识别文本", "score": 0.97}]}
-```
-
-- `box` 是 4 点像素坐标（px），内部按 `scale` 换算成 pt
-- 响应也可以直接是数组 `[{...}, ...]`
-- 字段兼容 `box`/`bounding_box`、`text`/`content`、`score`/`confidence`
-- 置信度低于 `min_score`（默认 0.45）的行会被丢弃
-- 接口不可达、非 200、或返回非法 JSON 时，该页直接抛 `RuntimeError`，错误信息带 URL 与状态码
-
-后端可以是 RapidOCR 官方 HTTP 服务，或任意满足上述契约的 OCR 网关。
+- 置信度低于 `min_score`（默认 0.45）的识别行会被丢弃
+- 模型输出的像素坐标按渲染倍率 `scale` 换算成 pt，供后续版面分析
+- 无环境变量、无 API Key、无超时配置
 
 ## 4. 使用方式
 
@@ -108,39 +83,30 @@ python cli.py samples -o output
 
 ### 4.2 在线 Demo（上传 PDF → 下载 PPTX）
 
-Demo 需要一个 OCR 服务，本地可先起侧车（RapidOCR → HTTP，端口 8866），再起 Web：
+Demo 是单进程，OCR 就在进程内跑，直接起 Web 服务即可：
 
 ```bash
-pip install -r requirements-demo.txt     # 含 OCR 侧车依赖
-python ocr_server.py &                   # 起 OCR 服务（127.0.0.1:8866）
+pip install -r requirements.txt
 uvicorn app:app --host 0.0.0.0 --port 7860
 # 浏览器打开 http://127.0.0.1:7860
 ```
-
-已经有外部 OCR 服务时，跳过侧车，直接 `OCR_API_URL=... uvicorn app:app`。
 
 接口：`POST /convert`（multipart 字段 `file`）→ 返回 JSON（含 `download` 地址）；`GET /download/{job}/{name}` 下载 pptx。
 
 ### 4.3 Docker / 公网部署
 
-镜像内自带 OCR 侧车，构建完直接可用，无需外部服务：
+镜像内自带 OCR 模型，构建完直接可用，无需外部服务：
 
 ```bash
 docker build -t pdf2pptx .
 docker run -p 7860:7860 pdf2pptx
 ```
 
-想改用外部 OCR 网关时覆盖环境变量即可：
-
-```bash
-docker run -p 7860:7860 -e OCR_API_URL=https://your-ocr.example.com/ocr pdf2pptx
-```
-
-Hugging Face Spaces（Docker SDK，免费公网可访问）：
+Hugging Face Spaces（Docker SDK）：
 
 1. 新建 Space，SDK 选 **Docker**；
 2. 把本仓库推上去（`README.md` 顶部需补 Spaces 的 YAML 头，示例见 `deploy/README-space.md`）；
-3. Space 会自动执行 `Dockerfile` → `start.sh`（先起 OCR 侧车，再起 7860 的 Web 服务）。
+3. Space 会自动执行 `Dockerfile` → `uvicorn app:app`，单个进程即可完成转换。
 
 ### 4.4 验证（可编辑性 / 还原度）
 
@@ -155,7 +121,7 @@ python verify.py samples/测试1.pdf output/测试1.pptx output/verify/测试1
 整页图片里没有语义，只有像素，所以流水线是「先认字，再切块，最后分层组装」：
 
 1. **栅格化**：按 2 倍分辨率渲染（原图 72dpi，2 倍上采样后 OCR 明显更准）。页面尺寸严格等于 PDF 页面尺寸（1pt = 12700 EMU），保证 1:1 版式。
-2. **OCR**：调用外部 OCR HTTP 服务，拿回每行文字的四点框、文本、置信度（本地不再加载任何模型）。
+2. **OCR**：本地 RapidOCR（PP-OCRv4 det + rec + 方向分类），拿回每行文字的四点框、文本、置信度。
 3. **字号拟合**：不用 OCR 框高度直接换算，而是量出**页面里真实墨迹的高度**，再用目标字体（微软雅黑）的度量反推字号；宽度偏差过大时用墨迹宽度校正。这样避免 OCR 框留白导致字号偏大。
 4. **空格还原**：OCR 常把词间空格吞掉（`BUILDABETTERTOMORROW`）。用墨迹的横向分段与字宽比例把空格补回，中文按字宽比例映射、纯西文按分段序号映射。
 5. **段落合并**：按行距、左对齐/居中对齐、字号一致性把行合成段落，一个段落 = 一个文本框（内部保留换行）。
@@ -186,7 +152,7 @@ python verify.py samples/测试1.pdf output/测试1.pptx output/verify/测试1
 4. **半透明/发光/阴影**：这类效果在图片层里保留，无法拆成 PPT 阴影对象。
 5. **极小图标**：面积过小的装饰会并入背景层，不再单独成对象。
 6. 页面是整版大图（如深色封面）时，整页会作为「去字后的背景图」+ 文本对象，页面本身没有可拆分的图片对象。
-7. **强依赖外部 OCR 服务**：转换质量直接受 OCR 接口返回的框位置与文本影响；接口不可用时没有本地模型可降级（本地 RapidOCR 已移除）。
+7. **OCR 精度的上限**：识别结果受版面复杂度影响（艺术字、旋转文字、低对比度小字会漏或错），转换质量随 OCR 结果波动。
 
 ## 8. 参数速查
 
