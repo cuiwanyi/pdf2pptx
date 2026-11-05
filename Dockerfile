@@ -6,10 +6,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt requirements-demo.txt ./
+RUN pip install --no-cache-dir -r requirements-demo.txt
 
 COPY . .
 EXPOSE 7860
 
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]
+# start.sh 先拉起 OCR 侧车（127.0.0.1:8866），再启动 Demo（7860）
+CMD ["sh", "start.sh"]

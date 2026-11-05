@@ -4,4 +4,5 @@ _scratch/
 .venv/
 output/verify/**/render.pdf
 .idea/
+.env
 output/冒烟*

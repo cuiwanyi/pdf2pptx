@@ -105,26 +105,39 @@ python cli.py samples -o output
 
 ### 4.2 在线 Demo（上传 PDF → 下载 PPTX）
 
+Demo 需要一个 OCR 服务，本地可先起侧车（RapidOCR → HTTP，端口 8866），再起 Web：
+
 ```bash
+pip install -r requirements-demo.txt     # 含 OCR 侧车依赖
+python ocr_server.py &                   # 起 OCR 服务（127.0.0.1:8866）
 uvicorn app:app --host 0.0.0.0 --port 7860
 # 浏览器打开 http://127.0.0.1:7860
 ```
+
+已经有外部 OCR 服务时，跳过侧车，直接 `OCR_API_URL=... uvicorn app:app`。
 
 接口：`POST /convert`（multipart 字段 `file`）→ 返回 JSON（含 `download` 地址）；`GET /download/{job}/{name}` 下载 pptx。
 
 ### 4.3 Docker / 公网部署
 
+镜像内自带 OCR 侧车，构建完直接可用，无需外部服务：
+
 ```bash
 docker build -t pdf2pptx .
-# 镜像内没有本地 OCR 模型，必须把 OCR 服务地址传进去
-docker run -p 7860:7860 -e OCR_API_URL=http://host.docker.internal:8866/ocr pdf2pptx
+docker run -p 7860:7860 pdf2pptx
+```
+
+想改用外部 OCR 网关时覆盖环境变量即可：
+
+```bash
+docker run -p 7860:7860 -e OCR_API_URL=https://your-ocr.example.com/ocr pdf2pptx
 ```
 
 Hugging Face Spaces（Docker SDK，免费公网可访问）：
 
 1. 新建 Space，SDK 选 **Docker**；
-2. 把本仓库内容推上去（`README.md` 顶部需加 Spaces 的 YAML 头，示例见 `deploy/README-space.md`）；
-3. Space 会自动执行 `Dockerfile`，启动 `uvicorn` 监听 7860 端口。
+2. 把本仓库推上去（`README.md` 顶部需补 Spaces 的 YAML 头，示例见 `deploy/README-space.md`）；
+3. Space 会自动执行 `Dockerfile` → `start.sh`（先起 OCR 侧车，再起 7860 的 Web 服务）。
 
 ### 4.4 验证（可编辑性 / 还原度）
 
