@@ -50,15 +50,18 @@ pdf2pptx/
 pip install -r requirements.txt
 ```
 
-OCR 不在本地加载模型，而是调用外部 OCR HTTP 服务，所以**必须先有一个可用的 OCR API** 才能跑转换（本地不再安装 rapidocr / onnxruntime）。
+OCR 有两种后端，由 `OCR_API_URL` 自动切换：
 
-### 3.1 OCR API 配置
+- **不设置**（默认）→ 进程内 RapidOCR（onnxruntime，纯 CPU），`pip install -r requirements-demo.txt` 即可离线跑
+- **设置了** → 调用外部 OCR HTTP 服务，本地不加载模型
+
+### 3.1 OCR 后端配置
 
 全部通过环境变量配置（见 `converter/ocr.py`）：
 
 | 变量 | 默认值 | 说明 |
 |---|---|---|
-| `OCR_API_URL` | `http://127.0.0.1:8866/ocr` | OCR 接口地址 |
+| `OCR_API_URL` | 空（走内置 RapidOCR） | 填地址则改用外部 OCR 服务，如 `http://127.0.0.1:8866/ocr` |
 | `OCR_API_TIMEOUT` | `30` | 单页请求超时（秒），只能填数字 |
 | `OCR_API_KEY` | 空 | 可选；非空时加 `Authorization: Bearer <key>` |
 

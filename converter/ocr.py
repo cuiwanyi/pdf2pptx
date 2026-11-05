@@ -1,10 +1,14 @@
-"""OCR：文本行检测 + 识别（走外部 HTTP API）。
+"""OCR：文本行检测 + 识别。
+
+两种后端，按环境变量自动切换：
+  1) 未设置 OCR_API_URL（默认）→ 进程内 RapidOCR（onnxruntime，纯 CPU）
+  2) 设置了 OCR_API_URL      → 调用外部 HTTP OCR 服务
 
 对外接口保持不变：detect_lines(bgr, scale, min_score) -> list[OcrLine]，
 上游 pipeline.py / analyze.py 无感知。
 
-API 配置（全部走环境变量，默认值直接对接 RapidOCR 官方 HTTP 服务）：
-    OCR_API_URL        接口地址，默认 http://127.0.0.1:8866/ocr
+API 配置（全部走环境变量）：
+    OCR_API_URL        接口地址，如 http://127.0.0.1:8866/ocr；留空则本地推理
     OCR_API_TIMEOUT    单次请求超时秒数，默认 30
     OCR_API_KEY        可选鉴权，加到 Authorization: Bearer <key>
 
@@ -24,6 +28,7 @@ from __future__ import annotations
 
 import io
 import os
+import threading
 from dataclasses import dataclass
 
 import cv2
@@ -62,10 +67,36 @@ class OcrLine:
         return (self.x0, self.y0, self.x1, self.y1)
 
 
-# --- API 配置 ---
-API_URL = os.environ.get("OCR_API_URL", "http://127.0.0.1:8866/ocr")
+# --- 后端配置 ---
+API_URL = os.environ.get("OCR_API_URL", "").strip()
 API_TIMEOUT = float(os.environ.get("OCR_API_TIMEOUT", "30"))
 API_KEY = os.environ.get("OCR_API_KEY", "")
+
+# 本地 RapidOCR 引擎（懒加载，首次调用初始化 ~1-2s）
+_local_engine = None
+_local_lock = threading.Lock()
+
+
+def _get_local_engine():
+    global _local_engine
+    if _local_engine is None:
+        with _local_lock:
+            if _local_engine is None:
+                from rapidocr_onnxruntime import RapidOCR
+
+                _local_engine = RapidOCR()
+    return _local_engine
+
+
+def _call_local(bgr: np.ndarray) -> list[tuple[list[list[float]], str, float]]:
+    """进程内 RapidOCR 推理，返回 [(box4点, text, score), ...]，坐标为像素。"""
+    result, _ = _get_local_engine()(bgr)
+    out = []
+    for item in result or []:
+        box, text, score = item[0], item[1], item[2]
+        out.append((box, str(text), float(score)))
+    return out
+
 
 
 def _encode_image(bgr: np.ndarray) -> bytes:
@@ -117,7 +148,7 @@ def _call_api(img_bytes: bytes) -> list[tuple[list[list[float]], str, float]]:
 
 
 def detect_lines(bgr: np.ndarray, scale: float, min_score: float = 0.45) -> list[OcrLine]:
-    res = _call_api(_encode_image(bgr))
+    res = _call_api(_encode_image(bgr)) if API_URL else _call_local(bgr)
 
     lines: list[OcrLine] = []
     for box, text, score in res:
